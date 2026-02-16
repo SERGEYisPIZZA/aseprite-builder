@@ -20,7 +20,7 @@ jobs:
     steps:
       - name: Fetch Aseprite release link
         id: aseprite-link
-        uses: a1393323447/fetch-release@main
+        uses: a1393323447/fetch-prerelease@main
         with:
             group: aseprite
             repo: aseprite
@@ -52,7 +52,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
         matrix:
-          os: [ windows-latest, ubuntu-latest, macOS-latest ]
+          os: [windows-latest]
         fail-fast: false
     steps:
       - name: Install Dependencies
