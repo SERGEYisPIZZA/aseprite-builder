@@ -18,14 +18,13 @@ jobs:
       download-link: ${{ steps.aseprite-link.outputs.download-link }}
       release-tag: ${{ steps.aseprite-link.outputs.release-tag }}
     steps:
-      - name: Fetch Aseprite prerelease link
+      - name: Fetch Aseprite release link
         id: aseprite-link
         uses: a1393323447/fetch-release@main
         with:
-          group: aseprite
-          repo: aseprite
-          match: Aseprite-.*?-Source.zip
-          prerelease: true  # Add this to fetch from prereleases instead of regular releases
+            group: aseprite
+            repo: aseprite
+            match: Aseprite-.*?-Source.zip
 
   create-release:
     name: Create Release
@@ -37,14 +36,13 @@ jobs:
       download-link: ${{ needs.fetch-aseprite-info.outputs.download-link }}
       release-tag: ${{ needs.fetch-aseprite-info.outputs.release-tag }}
     steps:
-      - uses: actions/checkout@v4  # Updated to v4
+      - uses: actions/checkout@v2
       - uses: ncipollo/release-action@v1
         with:
           tag: ${{ needs.fetch-aseprite-info.outputs.release-tag }}
           body: Aseprite-${{ needs.fetch-aseprite-info.outputs.release-tag }}
           skipIfReleaseExists: true
           token: ${{ secrets.GITHUB_TOKEN }}
-          prerelease: true  # Mark this as a prerelease in your repository
 
   build-aseprite:
     name: Build Aseprite
@@ -54,7 +52,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
         matrix:
-          os: [windows-latest, ubuntu-latest, macos-latest]  # Added all platforms
+          os: [ windows-latest, ubuntu-latest, macOS-latest ]
         fail-fast: false
     steps:
       - name: Install Dependencies
@@ -104,7 +102,7 @@ jobs:
           fi
 
           cmake -S . -B build -G Ninja \
-            -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \  # Fixed to use env.BUILD_TYPE
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
             -DCMAKE_OSX_DEPLOYMENT_TARGET=10.9 \
             -DENABLE_TESTS=OFF \
             -DENABLE_SCRIPTING=$enable_scripting \
@@ -122,12 +120,12 @@ jobs:
         working-directory: aseprite/build/bin
         shell: bash
         run: find . -mindepth 1 ! \( -name 'aseprite' -o -name 'aseprite.exe' -o -name 'data' -prune -o -name 'Aseprite.app' -prune \) -exec rm -rf {} +
-      - name: Make portable
+      - name: Make portable zip
         working-directory: aseprite/build/bin
         run: echo '# This file is here so Aseprite behaves as a portable program' > aseprite.ini
-      - name: Create release archive
+      - name: Create release
         working-directory: aseprite/build/bin
-        run: 7z a -tzip Aseprite-${{ needs.create-release.outputs.release-tag }}-${{ runner.os }}.zip *
+        run: 7z -tzip a Aseprite-${{ needs.create-release.outputs.release-tag }}-${{ runner.os }}.zip *
       - name: Upload release
         uses: svenstaro/upload-release-action@v2
         with:
@@ -135,4 +133,3 @@ jobs:
           file: aseprite/build/bin/Aseprite-${{ needs.create-release.outputs.release-tag }}-${{ runner.os }}.zip
           asset_name: Aseprite-${{ needs.create-release.outputs.release-tag }}-${{ runner.os }}.zip
           tag: ${{ needs.create-release.outputs.release-tag }}
-          prerelease: true  # Mark the uploaded assets as part of a prerelease
